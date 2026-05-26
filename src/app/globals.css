@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0c0c0c;
+  --surface: #141414;
+  --surface-raised: #1a1a1a;
+  --border: #2a2a2a;
+  --border-subtle: #1f1f1f;
+  --text: #fafafa;
+  --muted: #a8a8a8;
+  --accent: #e11d48;
+  --accent-dim: #be123c;
+  --accent-soft: rgba(225, 29, 72, 0.12);
+  --link: #fda4af;
+  --ok: #fafafa;
+  --err: #f87171;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-dm);
+  --font-mono: var(--font-jet);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-dm), "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: radial-gradient(ellipse 95% 80% at 50% 30%, black 15%, transparent 78%);
+  background-color: var(--bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cg fill='%23404040' fill-opacity='0.55'%3E%3Ccircle cx='2' cy='2' r='1'/%3E%3Ccircle cx='14' cy='2' r='1'/%3E%3Ccircle cx='26' cy='2' r='1'/%3E%3Ccircle cx='2' cy='14' r='1'/%3E%3Ccircle cx='26' cy='14' r='1'/%3E%3Ccircle cx='2' cy='26' r='1'/%3E%3Ccircle cx='14' cy='26' r='1'/%3E%3Ccircle cx='26' cy='26' r='1'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 28px 28px;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(225, 29, 72, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+::selection {
+  background: rgba(225, 29, 72, 0.35);
+  color: var(--text);
+}
+
+.chain-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.chain-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1.5rem 1rem 1.25rem;
+  scroll-padding-inline: 1rem;
+}
+
+.chain-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+.chain-scroll::-webkit-scrollbar-track {
+  background: var(--bg);
+  margin: 0 1rem;
+  border-radius: 4px;
+}
+.chain-scroll::-webkit-scrollbar-thumb {
+  background: var(--accent-dim);
+  border-radius: 4px;
+}
+.chain-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+.chain-track {
+  position: relative;
+  display: flex;
+  min-width: min-content;
+  align-items: stretch;
+  gap: 0;
+  padding-bottom: 0.5rem;
+}
+
+.chain-track::before {
+  content: "";
+  position: absolute;
+  left: 2rem;
+  right: 2rem;
+  top: 2.75rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent), var(--accent-dim));
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (max-width: 640px) {
+  .chain-track::before {
+    display: none;
+  }
+}
+
+@keyframes mining-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.mining-bar {
+  animation: mining-indeterminate 2.2s ease-in-out infinite;
+}
+
+.chain-scroll-hint {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-jet), monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
