@@ -25,12 +25,29 @@ export interface ValidationIssueDetail {
   storedHash?: string;
   expectedHash?: string;
   dataSnippet?: string;
+  officialData?: string;
+  chainData?: string;
   officialDataSnippet?: string;
   officialHash?: string;
+  chainHash?: string;
+}
+
+export interface EmissionComparison {
+  blockIndex: number;
+  officialData: string;
+  chainData: string;
+  officialHash: string;
+  chainHash: string;
+  dataMatches: boolean;
+  hashMatches: boolean;
+  matches: boolean;
 }
 
 export interface ValidationResult {
   valid: boolean;
+  chainIntegrityValid: boolean;
+  emissionAuditValid: boolean;
+  emissionComparisons: EmissionComparison[];
   length: number;
   issues: string[];
   issueDetails: ValidationIssueDetail[];

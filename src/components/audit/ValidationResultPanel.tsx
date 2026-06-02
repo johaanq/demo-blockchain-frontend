@@ -1,12 +1,13 @@
 "use client";
 
 import { CANDIDATES, parseVoteRecord } from "@/lib/demo-defaults";
-import type { BlockDto, TamperResult, ValidationIssueDetail, ValidationResult } from "@/lib/types";
-
-function shortHash(hash?: string): string {
-  if (!hash) return "—";
-  return hash.length <= 20 ? hash : `${hash.slice(0, 16)}…${hash.slice(-4)}`;
-}
+import type {
+  BlockDto,
+  EmissionComparison,
+  TamperResult,
+  ValidationIssueDetail,
+  ValidationResult,
+} from "@/lib/types";
 
 function issueKindLabel(kind: ValidationIssueDetail["kind"]): string {
   switch (kind) {
@@ -23,6 +24,115 @@ function issueKindLabel(kind: ValidationIssueDetail["kind"]): string {
   }
 }
 
+function VerdictBadge({ ok, labelOk, labelFail }: { ok: boolean; labelOk: string; labelFail: string }) {
+  return (
+    <span className={`audit-verdict__badge ${ok ? "audit-verdict__badge--ok" : "audit-verdict__badge--fail"}`}>
+      {ok ? labelOk : labelFail}
+    </span>
+  );
+}
+
+function EmissionCompareRow({ row }: { row: EmissionComparison }) {
+  const officialVote = parseVoteRecord(row.officialData);
+  const chainVote = parseVoteRecord(row.chainData);
+
+  return (
+    <tr className={row.matches ? "audit-compare-row" : "audit-compare-row audit-compare-row--mismatch"}>
+      <td className="audit-compare-row__index">#{row.blockIndex}</td>
+      <td className="audit-compare-row__status">
+        {row.matches ? (
+          <span className="audit-compare-row__match" aria-label="Coincide">
+            ✓
+          </span>
+        ) : (
+          <span className="audit-compare-row__mismatch" aria-label="No coincide">
+            ✗
+          </span>
+        )}
+      </td>
+      <td className="audit-compare-row__cell">
+        <p className="audit-compare-row__source">Acta de emisión (inmutable)</p>
+        <code className="font-data audit-compare-row__data">{row.officialData}</code>
+        {officialVote?.electorName && (
+          <p className="audit-compare-row__meta">{officialVote.electorName}</p>
+        )}
+        <p className="audit-compare-row__hash-label">Hash oficial</p>
+        <code className="font-data audit-compare-row__hash">{row.officialHash}</code>
+      </td>
+      <td className="audit-compare-row__cell">
+        <p className="audit-compare-row__source">Cadena blockchain (actual)</p>
+        <code className="font-data audit-compare-row__data">{row.chainData}</code>
+        {chainVote?.electorName && (
+          <p className="audit-compare-row__meta">{chainVote.electorName}</p>
+        )}
+        <p className="audit-compare-row__hash-label">Hash en cadena</p>
+        <code className="font-data audit-compare-row__hash">{row.chainHash}</code>
+      </td>
+    </tr>
+  );
+}
+
+function ValidationVerdicts({ validation }: { validation: ValidationResult }) {
+  const chainOk = validation.chainIntegrityValid ?? validation.valid;
+  const emissionOk = validation.emissionAuditValid ?? validation.valid;
+
+  return (
+    <div className="audit-verdicts">
+      <div className={`audit-verdict ${chainOk ? "audit-verdict--ok" : "audit-verdict--fail"}`}>
+        <p className="audit-verdict__step">Paso 1 — Integridad blockchain</p>
+        <p className="audit-verdict__desc">
+          Enlaces entre bloques, hash recalculado y PoW ({validation.length} registros)
+        </p>
+        <VerdictBadge ok={chainOk} labelOk="Válida" labelFail="Inválida" />
+      </div>
+      <div className={`audit-verdict ${emissionOk ? "audit-verdict--ok" : "audit-verdict--fail"}`}>
+        <p className="audit-verdict__step">Paso 2 — Acta de emisión</p>
+        <p className="audit-verdict__desc">
+          Comparación byte a byte: acta guardada al votar vs cadena actual
+        </p>
+        <VerdictBadge ok={emissionOk} labelOk="Coincide" labelFail="Fraude detectado" />
+      </div>
+    </div>
+  );
+}
+
+function EmissionComparisonTable({ comparisons }: { comparisons: EmissionComparison[] }) {
+  if (comparisons.length === 0) return null;
+
+  const mismatches = comparisons.filter((c) => !c.matches);
+
+  return (
+    <div className="audit-compare">
+      <p className="audit-compare__title">
+        Comparación real acta de emisión vs cadena blockchain
+        {mismatches.length > 0 && (
+          <span className="audit-compare__count">
+            {" "}
+            — {mismatches.length} registro(s) alterado(s)
+          </span>
+        )}
+      </p>
+      <div className="audit-compare__scroll">
+        <table className="audit-compare-table">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">¿Coincide?</th>
+              <th scope="col">Acta de emisión (original)</th>
+              <th scope="col">Cadena blockchain (actual)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparisons.map((row) => (
+              <EmissionCompareRow key={row.blockIndex} row={row} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function TamperResultNotice({ result }: { result: TamperResult }) {
   return (
     <div className="notice notice--warn audit-notice">
@@ -32,30 +142,21 @@ export function TamperResultNotice({ result }: { result: TamperResult }) {
         {result.rechainedCount > 0
           ? `; además se re-sellaron ${result.rechainedCount} registro(s) posteriores para mantener la cadena coherente.`
           : "."}
-        {" "}La cadena puede seguir viéndose válida; el fraude se detecta al contrastar con el{" "}
-        <strong>acta de emisión</strong>.
+        {" "}Pulse «Validar integridad» para ver la comparación real contra el acta de emisión.
       </p>
       <dl className="audit-diff audit-diff--spaced">
         <div>
-          <dt>Sufragio original (acta)</dt>
+          <dt>Acta de emisión (original)</dt>
           <dd className="font-data">{result.previousData}</dd>
         </div>
         <div>
-          <dt>Sufragio alterado (cadena actual)</dt>
+          <dt>Cadena blockchain (alterada)</dt>
           <dd className="font-data">{result.data}</dd>
         </div>
         <div>
-          <dt>Hash anterior → hash nuevo</dt>
+          <dt>Hash acta → hash cadena</dt>
           <dd className="font-data">
-            {shortHash(result.previousHash)} → {shortHash(result.hash)} (nonce {result.nonce.toLocaleString("es")})
-          </dd>
-        </div>
-        <div>
-          <dt>Intentos de minería</dt>
-          <dd>
-            {result.tamperAttempts.toLocaleString("es")} en el registro alterado
-            {result.rechainedCount > 0 &&
-              ` · ${result.tailAttempts.toLocaleString("es")} en la cola re-sellada`}
+            {result.previousHash} → {result.hash} (nonce {result.nonce.toLocaleString("es")})
           </dd>
         </div>
       </dl>
@@ -71,28 +172,36 @@ export function ValidationResultPanel({
   validation: ValidationResult;
   blocks: BlockDto[];
 }) {
+  const comparisons = validation.emissionComparisons ?? [];
+  const structuralIssues = validation.issueDetails.filter((d) => d.kind !== "emission_mismatch");
+
   return (
     <div className={`notice ${validation.valid ? "notice--ok" : "notice--error"} audit-notice`}>
       <p className="font-semibold">
-        {validation.valid ? "Registros íntegros" : "Alteración detectada"}
+        {validation.valid ? "Validación completa: todo coincide" : "Validación completa: discrepancia detectada"}
       </p>
       <p className="mt-1">{validation.message}</p>
 
-      {!validation.valid && validation.howItWorks && (
+      <ValidationVerdicts validation={validation} />
+
+      {comparisons.length > 0 && (
+        <div className="audit-how--spaced">
+          <EmissionComparisonTable comparisons={comparisons} />
+        </div>
+      )}
+
+      {validation.howItWorks && (
         <div className="audit-how audit-how--spaced">
-          <p className="audit-how__title">¿Cómo nos damos cuenta?</p>
+          <p className="audit-how__title">¿Cómo funciona esta validación?</p>
           <p className="audit-how__text">{validation.howItWorks}</p>
         </div>
       )}
 
-      {validation.issueDetails.length > 0 ? (
+      {structuralIssues.length > 0 && (
         <ul className="audit-issues audit-issues--spaced">
-          {validation.issueDetails.map((issue) => {
+          {structuralIssues.map((issue) => {
             const block = blocks.find((b) => b.index === issue.blockIndex);
             const vote = block ? parseVoteRecord(block.data) : null;
-            const officialVote = issue.officialDataSnippet
-              ? parseVoteRecord(issue.officialDataSnippet)
-              : null;
             return (
               <li key={`${issue.kind}-${issue.blockIndex}`} className="audit-issue">
                 <div className="audit-issue__head">
@@ -100,25 +209,7 @@ export function ValidationResultPanel({
                   <strong>{issue.title}</strong>
                 </div>
                 <p className="audit-issue__detail">{issue.detail}</p>
-                {issue.kind === "emission_mismatch" && issue.officialDataSnippet && (
-                  <>
-                    <p className="audit-issue__snippet">
-                      <span className="audit-issue__label">Acta de emisión (original):</span>{" "}
-                      <code className="font-data">{issue.officialDataSnippet}</code>
-                    </p>
-                    {officialVote?.electorName && (
-                      <p className="audit-issue__snippet">
-                        <span className="audit-issue__label">Electora / Elector (original):</span>{" "}
-                        {officialVote.electorName}
-                      </p>
-                    )}
-                    <p className="audit-issue__snippet">
-                      <span className="audit-issue__label">Cadena actual (alterada):</span>{" "}
-                      <code className="font-data">{issue.dataSnippet}</code>
-                    </p>
-                  </>
-                )}
-                {vote?.electorName && issue.kind !== "emission_mismatch" && (
+                {vote?.electorName && (
                   <p className="audit-issue__snippet">
                     <span className="audit-issue__label">Electora / Elector afectado:</span>{" "}
                     {vote.electorName}
@@ -126,33 +217,21 @@ export function ValidationResultPanel({
                     {CANDIDATES[vote.option].party} — {CANDIDATES[vote.option].name}
                   </p>
                 )}
-                {issue.dataSnippet && issue.kind !== "emission_mismatch" && (
+                {issue.dataSnippet && (
                   <p className="audit-issue__snippet">
                     <span className="audit-issue__label">Contenido auditado:</span>{" "}
                     <code className="font-data">{issue.dataSnippet}</code>
                   </p>
                 )}
-                {issue.storedHash && issue.expectedHash && issue.kind === "hash_mismatch" && (
+                {issue.storedHash && issue.expectedHash && (
                   <dl className="audit-hash-compare">
                     <div>
                       <dt>Hash almacenado</dt>
-                      <dd className="font-data">{shortHash(issue.storedHash)}</dd>
+                      <dd className="font-data">{issue.storedHash}</dd>
                     </div>
                     <div>
                       <dt>Hash recalculado</dt>
-                      <dd className="font-data">{shortHash(issue.expectedHash)}</dd>
-                    </div>
-                  </dl>
-                )}
-                {issue.officialHash && issue.storedHash && issue.kind === "emission_mismatch" && (
-                  <dl className="audit-hash-compare">
-                    <div>
-                      <dt>Hash en acta de emisión</dt>
-                      <dd className="font-data">{shortHash(issue.officialHash)}</dd>
-                    </div>
-                    <div>
-                      <dt>Hash en cadena actual</dt>
-                      <dd className="font-data">{shortHash(issue.storedHash)}</dd>
+                      <dd className="font-data">{issue.expectedHash}</dd>
                     </div>
                   </dl>
                 )}
@@ -160,16 +239,16 @@ export function ValidationResultPanel({
             );
           })}
         </ul>
-      ) : (
-        validation.issues.length > 0 && (
-          <ul className="audit-issues audit-issues--spaced">
-            {validation.issues.map((issue) => (
-              <li key={issue} className="audit-issue">
-                {issue}
-              </li>
-            ))}
-          </ul>
-        )
+      )}
+
+      {!validation.valid && validation.issueDetails.length === 0 && validation.issues.length > 0 && (
+        <ul className="audit-issues audit-issues--spaced">
+          {validation.issues.map((issue) => (
+            <li key={issue} className="audit-issue">
+              {issue}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

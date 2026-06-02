@@ -138,8 +138,8 @@ export function EscrutinioView() {
                 </button>
               </div>
               <p className="audit-panel-note">
-                Paso 1: altere un sufragio (se re-minará) · Paso 2: valide · El sistema comparará la
-                cadena con el acta de emisión inmutable y dirá qué registro fue cambiado.
+                Paso 1: altere un sufragio (se re-minará) · Paso 2: valide · Verá dos pruebas: integridad
+                blockchain y comparación real acta de emisión vs cadena alterada.
               </p>
             </div>
           </div>
