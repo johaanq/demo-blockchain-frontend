@@ -137,7 +137,7 @@ export function BlockchainDemo() {
       <main className="main">
         <div className="wrap">
           {error && (
-            <div className="notice notice--error mb-6" role="alert">
+            <div className="notice notice--error notice--page" role="alert">
               <p className="font-semibold">No se pudo completar la operación</p>
               <p className="mt-1">{error}</p>
             </div>

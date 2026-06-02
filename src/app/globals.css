@@ -100,6 +100,16 @@ h3 {
   padding: 1.75rem 0 3rem;
 }
 
+@media (max-width: 640px) {
+  .wrap {
+    padding: 0 1rem;
+  }
+
+  .main {
+    padding: 1.15rem 0 2.25rem;
+  }
+}
+
 /* Página — layout común */
 .page {
   display: flex;
@@ -346,14 +356,46 @@ h3 {
     gap: 0.85rem;
   }
 
+  .gov-header__band-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .gov-brand {
+    gap: 0.75rem;
+    max-width: 100%;
+  }
+
+  .gov-brand__title {
+    font-size: 0.9375rem;
+  }
+
+  .gov-brand__sub {
+    max-width: none;
+    font-size: 0.6875rem;
+  }
+
   .gov-nav {
-    flex-wrap: wrap;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.35rem;
   }
 
   .gov-nav__link {
-    flex: 1;
-    min-width: calc(50% - 0.2rem);
+    flex: none;
+    width: 100%;
+    min-width: 0;
     text-align: center;
+    padding: 0.7rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .gov-header__peru-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
   }
 }
 
@@ -572,12 +614,18 @@ h3 {
   border-right: 1px solid var(--line);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .onpe-hero {
+    flex-direction: column;
+    padding: 1.15rem 1rem;
+    gap: 1rem;
+  }
+
   .onpe-hero__logos {
     border-right: none;
     padding-right: 0;
     border-bottom: 1px solid var(--line);
-    padding-bottom: 1rem;
+    padding-bottom: 0.85rem;
     width: 100%;
   }
 }
@@ -649,20 +697,29 @@ h3 {
 
 @media (max-width: 720px) {
   .wizard-progress {
-    grid-template-columns: 1fr;
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
 
   .wizard-progress__item {
-    flex-direction: row;
-    justify-content: flex-start;
-    padding: 0.5rem 0.85rem;
-    text-align: left;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
+    flex: 0 0 auto;
+    min-width: 4.75rem;
+    max-width: 5.5rem;
+    scroll-snap-align: start;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.55rem 0.35rem;
+    text-align: center;
+    font-size: 0.5625rem;
+    line-height: 1.25;
+    border-right: 1px solid var(--line);
+    border-bottom: none;
   }
 
   .wizard-progress__item:last-child {
-    border-bottom: none;
+    border-right: none;
   }
 }
 
@@ -909,6 +966,11 @@ h3 {
   .page-columns--vote {
     grid-template-columns: minmax(0, 1fr) 280px;
   }
+
+  .guide-panel {
+    position: sticky;
+    top: 5.5rem;
+  }
 }
 
 /* Card system */
@@ -1060,6 +1122,31 @@ h3 {
   color: var(--warn);
 }
 
+.validation-issues {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-data);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.validation-issues li + li {
+  margin-top: 0.35rem;
+}
+
+.notice .mt-1 {
+  margin-top: 0.35rem;
+}
+
+.notice--page {
+  margin-bottom: 1.25rem;
+}
+
+.notice .font-semibold {
+  font-weight: 600;
+}
+
 /* Cédula electoral virtual — estilo ONPE */
 .ballot {
   border: 2px solid var(--onpe-blue);
@@ -1199,6 +1286,10 @@ h3 {
   color: var(--ink);
 }
 
+.ballot__label {
+  min-width: 0;
+}
+
 .ballot__candidate {
   margin: 0.25rem 0 0;
   font-size: 0.8125rem;
@@ -1319,8 +1410,7 @@ h3 {
 
 /* Guía lateral */
 .guide-panel {
-  position: sticky;
-  top: 5.5rem;
+  position: relative;
   padding: 1.15rem 1.25rem;
   background: #fff;
   border: 1px solid var(--line);
@@ -1641,6 +1731,115 @@ h3 {
   margin-top: 1rem;
 }
 
+@media (max-width: 640px) {
+  .btn-row {
+    flex-direction: column;
+  }
+
+  .btn-row .btn {
+    width: 100%;
+  }
+
+  .onpe-panel__head,
+  .onpe-panel__body,
+  .card__head,
+  .card__body,
+  .card__foot,
+  .vote-pow-panel,
+  .chain-panel__head,
+  .chain-panel__body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .onpe-panel__head,
+  .chain-panel__head {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .receipt-card__code {
+    font-size: clamp(0.9375rem, 4.5vw, 1.375rem);
+    word-break: break-all;
+    letter-spacing: 0.04em;
+  }
+
+  .ballot__grid {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .ballot__option {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    text-align: left;
+    border-right: none;
+    border-bottom: 2px solid var(--onpe-blue);
+  }
+
+  .ballot__option:last-child {
+    border-bottom: none;
+  }
+
+  .ballot__check {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .ballot__logo-wrap {
+    width: 3.75rem;
+    height: 3.75rem;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .ballot__party,
+  .ballot__candidate {
+    text-align: left;
+  }
+
+  .ballot__label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ballot__header-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .ballot__header-org,
+  .ballot__header-type {
+    font-size: 0.5625rem;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  .ballot__header-title {
+    font-size: 0.75rem;
+  }
+
+  .block {
+    width: min(240px, 82vw);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .chain-panel__desc {
+    font-size: 0.75rem;
+  }
+
+  .gov-lead {
+    font-size: 0.875rem;
+  }
+}
+
 .pow-control {
   display: flex;
   align-items: center;
@@ -1688,6 +1887,7 @@ h3 {
   width: 100%;
   max-width: 28rem;
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   background: var(--card);
@@ -1696,11 +1896,140 @@ h3 {
   overflow: hidden;
 }
 
+@media (max-width: 640px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+}
+
+/* Detalle de bloque (auditoría) */
+.block-detail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.block-detail__intro {
+  flex: 1;
+  min-width: 0;
+}
+
+.block-detail__title {
+  font-size: 1.0625rem;
+}
+
+.block-detail__close {
+  flex-shrink: 0;
+}
+
+.block-detail__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.block-detail__row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.block-detail__label {
+  margin-bottom: 0;
+}
+
+.block-detail__value {
+  margin: 0.35rem 0 0;
+  word-break: break-all;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.block-detail__value.font-data {
+  font-size: 0.6875rem;
+}
+
+.block-detail__pow {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.chain-scroll-hint {
+  display: none;
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .chain-scroll-hint {
+    display: block;
+  }
+}
+
 .modal__head {
   padding: 1rem 1.25rem;
   background: var(--onpe-blue);
   color: #fff;
   font-weight: 600;
+}
+
+.modal__stats {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal__stats-label {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.modal__stats-value {
+  margin: 0.25rem 0 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--onpe-blue);
+  line-height: 1.2;
+}
+
+.modal__stats-prefix {
+  margin: 0.35rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.modal__foot {
+  padding: 1rem 1.25rem;
+}
+
+.modal__log-line--ok {
+  color: var(--ok);
+}
+
+.modal__log-success {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+  color: var(--ok);
+  word-break: break-all;
+}
+
+.modal__log-error {
+  margin: 0;
+  color: var(--onpe-red);
 }
 
 .modal__log {

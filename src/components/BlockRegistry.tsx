@@ -23,6 +23,9 @@ export function BlockRegistry({
 
   return (
     <div className="chain-wrap">
+      <p className="chain-scroll-hint" aria-hidden>
+        Deslice horizontalmente para ver todos los registros →
+      </p>
       <div className="chain-row">
         {blocks.map((block, i) => (
           <div key={block.index} className="chain-row__segment">

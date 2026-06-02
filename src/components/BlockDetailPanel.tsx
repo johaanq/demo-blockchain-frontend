@@ -38,10 +38,10 @@ export function BlockDetailPanel({
         : null;
 
   return (
-    <div className="card">
-      <div className="card__head flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="card__title text-lg">
+    <div className="card block-detail">
+      <div className="card__head block-detail__head">
+        <div className="block-detail__intro">
+          <h3 className="card__title block-detail__title">
             {isGenesis ? "Acta de apertura" : `Detalle del registro ${block.index}`}
           </h3>
           {vote && (
@@ -50,11 +50,11 @@ export function BlockDetailPanel({
             </p>
           )}
         </div>
-        <button type="button" className="btn btn--ghost" onClick={onClose}>
+        <button type="button" className="btn btn--ghost block-detail__close" onClick={onClose}>
           Cerrar
         </button>
       </div>
-      <div className="card__body space-y-4 text-sm">
+      <div className="card__body block-detail__body">
         <Row label="Contenido" value={block.data} data />
         <Row
           label="Marca de tiempo"
@@ -67,11 +67,7 @@ export function BlockDetailPanel({
         <Row label="Hash anterior" value={block.previousHash} data copy={copy} copied={copied} />
         <Row label="Hash SHA-256" value={block.hash} data copy={copy} copied={copied} />
         {pow && (
-          <p
-            className={`rounded-lg px-3 py-2 text-sm ${
-              pow.startsWith("Cumple") ? "notice notice--ok" : "notice notice--error"
-            }`}
-          >
+          <p className={`block-detail__pow ${pow.startsWith("Cumple") ? "notice notice--ok" : "notice notice--error"}`}>
             {pow}
           </p>
         )}
@@ -95,16 +91,16 @@ function Row({
 }) {
   const key = label;
   return (
-    <div>
-      <div className="flex items-center justify-between gap-2">
-        <span className="label mb-0">{label}</span>
+    <div className="block-detail__row">
+      <div className="block-detail__row-head">
+        <span className="label block-detail__label">{label}</span>
         {copy && (
-          <button type="button" className="btn btn--ghost text-xs" onClick={() => copy(value, key)}>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => copy(value, key)}>
             {copied === key ? "Copiado" : "Copiar"}
           </button>
         )}
       </div>
-      <p className={`mt-1 break-all ${data ? "font-data text-xs" : ""}`}>{value}</p>
+      <p className={`block-detail__value ${data ? "font-data" : ""}`}>{value}</p>
     </div>
   );
 }

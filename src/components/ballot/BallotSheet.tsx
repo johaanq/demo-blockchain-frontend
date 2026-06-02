@@ -36,8 +36,10 @@ function PartyOption({
           className="ballot__logo-img"
         />
       </div>
-      <p className="ballot__party">{c.party}</p>
-      <p className="ballot__candidate">{c.name}</p>
+      <div className="ballot__label">
+        <p className="ballot__party">{c.party}</p>
+        <p className="ballot__candidate">{c.name}</p>
+      </div>
     </button>
   );
 }

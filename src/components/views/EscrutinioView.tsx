@@ -87,7 +87,7 @@ export function EscrutinioView({
           </p>
           <p className="mt-1">{validation.message}</p>
           {validation.issues.length > 0 && (
-            <ul className="font-data mt-2 space-y-1 text-sm">
+            <ul className="validation-issues">
               {validation.issues.map((i) => (
                 <li key={i}>{i}</li>
               ))}

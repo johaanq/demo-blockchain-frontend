@@ -42,24 +42,24 @@ export function MiningTerminal({
     <div className="overlay" role="dialog" aria-modal aria-label="Sellado en progreso">
       <div className="modal">
         <div className="modal__head">Sellado del registro · dificultad {difficulty}</div>
-        <div className="card__body border-b border-[var(--line)]">
-          <p className="text-sm text-[var(--muted)]">Intentos realizados</p>
-          <p className="font-serif text-3xl text-[var(--brand)]">{attempts.toLocaleString("es")}</p>
-          <p className="font-data mt-1 text-xs text-[var(--muted)]">Prefijo «{targetPrefix}»</p>
+        <div className="modal__stats">
+          <p className="modal__stats-label">Intentos realizados</p>
+          <p className="modal__stats-value">{attempts.toLocaleString("es")}</p>
+          <p className="modal__stats-prefix font-data">Prefijo «{targetPrefix}»</p>
         </div>
         <div ref={logRef} className="modal__log">
           {lines.map((line, i) => (
-            <p key={`${i}-${line.attempt}`} className={line.valid ? "text-[var(--ok)]" : ""}>
+            <p key={`${i}-${line.attempt}`} className={line.valid ? "modal__log-line--ok" : ""}>
               [{line.attempt.toLocaleString("es")}] nonce={line.nonce} · {line.hash.slice(0, 24)}…
             </p>
           ))}
           {status === "success" && finalHash && (
-            <p className="mt-2 font-semibold text-[var(--ok)]">Sellado: {finalHash}</p>
+            <p className="modal__log-success">Sellado: {finalHash}</p>
           )}
-          {status === "error" && <p className="text-[var(--brand)]">{errorMessage}</p>}
+          {status === "error" && <p className="modal__log-error">{errorMessage}</p>}
         </div>
         {status !== "mining" && onClose && (
-          <div className="card__foot">
+          <div className="modal__foot">
             <button type="button" className="btn btn--primary btn-block" onClick={onClose}>
               Cerrar
             </button>
