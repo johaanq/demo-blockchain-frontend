@@ -1426,6 +1426,10 @@ h3 {
   color: var(--muted);
 }
 
+.audit-result--bottom {
+  margin-top: 1.25rem;
+}
+
 .notice .mt-1 {
   margin-top: 0.35rem;
 }

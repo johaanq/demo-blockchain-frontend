@@ -55,8 +55,6 @@ export function EscrutinioView() {
 
       {lastTamper && !validation && <TamperResultNotice result={lastTamper} />}
 
-      {validation && <ValidationResultPanel validation={validation} blocks={blocks} />}
-
       <section className="chain-panel" aria-labelledby="chain-title">
         <div className="chain-panel__head">
           <div>
@@ -138,8 +136,8 @@ export function EscrutinioView() {
                 </button>
               </div>
               <p className="audit-panel-note">
-                Paso 1: altere un sufragio (se re-minará) · Paso 2: valide · Verá dos pruebas: integridad
-                blockchain y comparación real acta de emisión vs cadena alterada.
+                Altere un sufragio y pulse «Validar integridad». Abajo verá solo los registros que
+                no coinciden entre el acta de emisión y la cadena.
               </p>
             </div>
           </div>
@@ -163,6 +161,10 @@ export function EscrutinioView() {
           )}
         </div>
       </div>
+
+      {validation && (
+        <ValidationResultPanel validation={validation} blocks={blocks} />
+      )}
     </div>
   );
 }

@@ -24,32 +24,13 @@ function issueKindLabel(kind: ValidationIssueDetail["kind"]): string {
   }
 }
 
-function VerdictBadge({ ok, labelOk, labelFail }: { ok: boolean; labelOk: string; labelFail: string }) {
-  return (
-    <span className={`audit-verdict__badge ${ok ? "audit-verdict__badge--ok" : "audit-verdict__badge--fail"}`}>
-      {ok ? labelOk : labelFail}
-    </span>
-  );
-}
-
 function EmissionCompareRow({ row }: { row: EmissionComparison }) {
   const officialVote = parseVoteRecord(row.officialData);
   const chainVote = parseVoteRecord(row.chainData);
 
   return (
-    <tr className={row.matches ? "audit-compare-row" : "audit-compare-row audit-compare-row--mismatch"}>
+    <tr className="audit-compare-row audit-compare-row--mismatch">
       <td className="audit-compare-row__index">#{row.blockIndex}</td>
-      <td className="audit-compare-row__status">
-        {row.matches ? (
-          <span className="audit-compare-row__match" aria-label="Coincide">
-            ✓
-          </span>
-        ) : (
-          <span className="audit-compare-row__mismatch" aria-label="No coincide">
-            ✗
-          </span>
-        )}
-      </td>
       <td className="audit-compare-row__cell">
         <p className="audit-compare-row__source">Acta de emisión (inmutable)</p>
         <code className="font-data audit-compare-row__data">{row.officialData}</code>
@@ -72,58 +53,30 @@ function EmissionCompareRow({ row }: { row: EmissionComparison }) {
   );
 }
 
-function ValidationVerdicts({ validation }: { validation: ValidationResult }) {
-  const chainOk = validation.chainIntegrityValid ?? validation.valid;
-  const emissionOk = validation.emissionAuditValid ?? validation.valid;
-
-  return (
-    <div className="audit-verdicts">
-      <div className={`audit-verdict ${chainOk ? "audit-verdict--ok" : "audit-verdict--fail"}`}>
-        <p className="audit-verdict__step">Paso 1 — Integridad blockchain</p>
-        <p className="audit-verdict__desc">
-          Enlaces entre bloques, hash recalculado y PoW ({validation.length} registros)
-        </p>
-        <VerdictBadge ok={chainOk} labelOk="Válida" labelFail="Inválida" />
-      </div>
-      <div className={`audit-verdict ${emissionOk ? "audit-verdict--ok" : "audit-verdict--fail"}`}>
-        <p className="audit-verdict__step">Paso 2 — Acta de emisión</p>
-        <p className="audit-verdict__desc">
-          Comparación byte a byte: acta guardada al votar vs cadena actual
-        </p>
-        <VerdictBadge ok={emissionOk} labelOk="Coincide" labelFail="Fraude detectado" />
-      </div>
-    </div>
-  );
-}
-
 function EmissionComparisonTable({ comparisons }: { comparisons: EmissionComparison[] }) {
-  if (comparisons.length === 0) return null;
-
   const mismatches = comparisons.filter((c) => !c.matches);
+  if (mismatches.length === 0) return null;
 
   return (
     <div className="audit-compare">
       <p className="audit-compare__title">
         Comparación real acta de emisión vs cadena blockchain
-        {mismatches.length > 0 && (
-          <span className="audit-compare__count">
-            {" "}
-            — {mismatches.length} registro(s) alterado(s)
-          </span>
-        )}
+        <span className="audit-compare__count">
+          {" "}
+          — {mismatches.length} registro(s) alterado(s)
+        </span>
       </p>
       <div className="audit-compare__scroll">
         <table className="audit-compare-table">
           <thead>
             <tr>
               <th scope="col">#</th>
-              <th scope="col">¿Coincide?</th>
               <th scope="col">Acta de emisión (original)</th>
               <th scope="col">Cadena blockchain (actual)</th>
             </tr>
           </thead>
           <tbody>
-            {comparisons.map((row) => (
+            {mismatches.map((row) => (
               <EmissionCompareRow key={row.blockIndex} row={row} />
             ))}
           </tbody>
@@ -142,7 +95,7 @@ export function TamperResultNotice({ result }: { result: TamperResult }) {
         {result.rechainedCount > 0
           ? `; además se re-sellaron ${result.rechainedCount} registro(s) posteriores para mantener la cadena coherente.`
           : "."}
-        {" "}Pulse «Validar integridad» para ver la comparación real contra el acta de emisión.
+        {" "}Pulse «Validar integridad» para ver la comparación contra el acta de emisión.
       </p>
       <dl className="audit-diff audit-diff--spaced">
         <div>
@@ -160,7 +113,6 @@ export function TamperResultNotice({ result }: { result: TamperResult }) {
           </dd>
         </div>
       </dl>
-      <p className="audit-notice__hint audit-notice__hint--spaced">{result.explanation}</p>
     </div>
   );
 }
@@ -173,82 +125,78 @@ export function ValidationResultPanel({
   blocks: BlockDto[];
 }) {
   const comparisons = validation.emissionComparisons ?? [];
+  const mismatches = comparisons.filter((c) => !c.matches);
   const structuralIssues = validation.issueDetails.filter((d) => d.kind !== "emission_mismatch");
 
+  if (validation.valid) {
+    return (
+      <div className="notice notice--ok audit-notice audit-result--bottom">
+        <p className="font-semibold">Registros íntegros</p>
+        <p className="mt-1">Todos los sufragios coinciden con el acta de emisión.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className={`notice ${validation.valid ? "notice--ok" : "notice--error"} audit-notice`}>
-      <p className="font-semibold">
-        {validation.valid ? "Validación completa: todo coincide" : "Validación completa: discrepancia detectada"}
-      </p>
-      <p className="mt-1">{validation.message}</p>
-
-      <ValidationVerdicts validation={validation} />
-
-      {comparisons.length > 0 && (
-        <div className="audit-how--spaced">
-          <EmissionComparisonTable comparisons={comparisons} />
-        </div>
-      )}
-
-      {validation.howItWorks && (
-        <div className="audit-how audit-how--spaced">
-          <p className="audit-how__title">¿Cómo funciona esta validación?</p>
-          <p className="audit-how__text">{validation.howItWorks}</p>
-        </div>
-      )}
-
+    <div className="audit-result audit-result--bottom">
       {structuralIssues.length > 0 && (
-        <ul className="audit-issues audit-issues--spaced">
-          {structuralIssues.map((issue) => {
-            const block = blocks.find((b) => b.index === issue.blockIndex);
-            const vote = block ? parseVoteRecord(block.data) : null;
-            return (
-              <li key={`${issue.kind}-${issue.blockIndex}`} className="audit-issue">
-                <div className="audit-issue__head">
-                  <span className="gov-badge gov-badge--info">{issueKindLabel(issue.kind)}</span>
-                  <strong>{issue.title}</strong>
-                </div>
-                <p className="audit-issue__detail">{issue.detail}</p>
-                {vote?.electorName && (
-                  <p className="audit-issue__snippet">
-                    <span className="audit-issue__label">Electora / Elector afectado:</span>{" "}
-                    {vote.electorName}
-                    {" · "}
-                    {CANDIDATES[vote.option].party} — {CANDIDATES[vote.option].name}
-                  </p>
-                )}
-                {issue.dataSnippet && (
-                  <p className="audit-issue__snippet">
-                    <span className="audit-issue__label">Contenido auditado:</span>{" "}
-                    <code className="font-data">{issue.dataSnippet}</code>
-                  </p>
-                )}
-                {issue.storedHash && issue.expectedHash && (
-                  <dl className="audit-hash-compare">
-                    <div>
-                      <dt>Hash almacenado</dt>
-                      <dd className="font-data">{issue.storedHash}</dd>
-                    </div>
-                    <div>
-                      <dt>Hash recalculado</dt>
-                      <dd className="font-data">{issue.expectedHash}</dd>
-                    </div>
-                  </dl>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <div className="notice notice--error audit-notice">
+          <ul className="audit-issues">
+            {structuralIssues.map((issue) => {
+              const block = blocks.find((b) => b.index === issue.blockIndex);
+              const vote = block ? parseVoteRecord(block.data) : null;
+              return (
+                <li key={`${issue.kind}-${issue.blockIndex}`} className="audit-issue">
+                  <div className="audit-issue__head">
+                    <span className="gov-badge gov-badge--info">{issueKindLabel(issue.kind)}</span>
+                    <strong>{issue.title}</strong>
+                  </div>
+                  <p className="audit-issue__detail">{issue.detail}</p>
+                  {vote?.electorName && (
+                    <p className="audit-issue__snippet">
+                      <span className="audit-issue__label">Electora / Elector afectado:</span>{" "}
+                      {vote.electorName}
+                      {" · "}
+                      {CANDIDATES[vote.option].party} — {CANDIDATES[vote.option].name}
+                    </p>
+                  )}
+                  {issue.dataSnippet && (
+                    <p className="audit-issue__snippet">
+                      <span className="audit-issue__label">Contenido auditado:</span>{" "}
+                      <code className="font-data">{issue.dataSnippet}</code>
+                    </p>
+                  )}
+                  {issue.storedHash && issue.expectedHash && (
+                    <dl className="audit-hash-compare">
+                      <div>
+                        <dt>Hash almacenado</dt>
+                        <dd className="font-data">{issue.storedHash}</dd>
+                      </div>
+                      <div>
+                        <dt>Hash recalculado</dt>
+                        <dd className="font-data">{issue.expectedHash}</dd>
+                      </div>
+                    </dl>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
 
-      {!validation.valid && validation.issueDetails.length === 0 && validation.issues.length > 0 && (
-        <ul className="audit-issues audit-issues--spaced">
-          {validation.issues.map((issue) => (
-            <li key={issue} className="audit-issue">
-              {issue}
-            </li>
-          ))}
-        </ul>
+      {mismatches.length > 0 && <EmissionComparisonTable comparisons={comparisons} />}
+
+      {mismatches.length === 0 && structuralIssues.length === 0 && validation.issues.length > 0 && (
+        <div className="notice notice--error audit-notice">
+          <ul className="audit-issues">
+            {validation.issues.map((issue) => (
+              <li key={issue} className="audit-issue">
+                {issue}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );
