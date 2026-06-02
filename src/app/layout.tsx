@@ -1,22 +1,17 @@
 import type { Metadata } from "next";
-import { DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm",
+const sans = Source_Sans_3({
+  variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const jetbrains = JetBrains_Mono({
-  variable: "--font-jet",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-});
-
 export const metadata: Metadata = {
-  title: "Ledger Demo — Blockchain",
-  description: "Demostración de cadena de bloques con SHA-256 y Proof of Work",
+  title: "Voto Digital ONPE — EG Perú 2026 (demo)",
+  description:
+    "Prototipo académico de sufragio en línea con verificación de DNI, padrón electoral y trazabilidad blockchain",
 };
 
 export default function RootLayout({
@@ -25,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${dmSans.variable} ${jetbrains.variable} h-full`}>
-      <body className="relative min-h-full antialiased">{children}</body>
+    <html lang="es" className={`${sans.variable} h-full`}>
+      <body>{children}</body>
     </html>
   );
 }
