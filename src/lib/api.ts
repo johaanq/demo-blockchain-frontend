@@ -32,12 +32,22 @@ export const api = {
   initChain: () =>
     request<{ message: string; blocks: BlockDto[] }>("/chain/init", { method: "POST" }),
 
+  seedDemo: () =>
+    request<{ message: string; blocksAdded: number; blocks: BlockDto[] }>("/chain/seed", {
+      method: "POST",
+    }),
+
   getChain: () => request<ChainResponse>("/chain"),
 
   addBlock: (data: string) =>
-    request<BlockDto>("/chain/blocks", {
+    request<MineResult>("/chain/blocks", {
       method: "POST",
       body: JSON.stringify({ data }),
+    }),
+
+  sealPending: () =>
+    request<{ sealedCount: number; attempts: number; difficulty: number }>("/chain/seal-pending", {
+      method: "POST",
     }),
 
   mineBlock: (data: string) =>
@@ -52,5 +62,25 @@ export const api = {
     request<{ index: number; data: string; hash: string; warning: string }>("/chain/tamper", {
       method: "POST",
       body: JSON.stringify({ index, data }),
+    }),
+
+  voterConfig: () =>
+    request<{ configured: boolean; provider: string }>("/voter/config"),
+
+  verifyVoter: (dni: string, birthDate?: string) =>
+    request<{
+      dni: string;
+      birthDate: string | null;
+      fullName: string;
+      mesa: string;
+      localVotacion: string;
+      distrito: string;
+      provincia: string;
+      departamento: string;
+      identitySource: string;
+      birthDateVerified: boolean;
+    }>("/voter/verify", {
+      method: "POST",
+      body: JSON.stringify({ dni, birthDate }),
     }),
 };

@@ -1,52 +1,46 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AppFooter } from "@/components/layout/AppFooter";
+import { AppHeader, StatusStrip } from "@/components/layout/AppHeader";
+import { EscrutinioView } from "@/components/views/EscrutinioView";
+import { VotarView } from "@/components/views/VotarView";
 import { api } from "@/lib/api";
-import {
-  DEFAULT_BLOCK_PAYLOAD,
-  DEFAULT_TAMPER_PAYLOAD,
-  DIFFICULTY_DEFAULT,
-} from "@/lib/demo-defaults";
+import { DEFAULT_TAMPER_PAYLOAD, DIFFICULTY_DEFAULT } from "@/lib/demo-defaults";
+import type { AppView } from "@/lib/navigation";
 import type { BlockDto, ValidationResult } from "@/lib/types";
-import { AppHeader } from "./AppHeader";
-import { BlockDetailPanel } from "./BlockDetailPanel";
-import { BlockRegistry } from "./BlockRegistry";
-import { DemoControls } from "./DemoControls";
 import { MiningPlayback } from "@/lib/mining-playback";
-import { mineBlockStream } from "@/lib/mining-stream";
+import { addBlockStream, type MineStreamEvent } from "@/lib/mining-stream";
 import { MiningTerminal, miningEventToLine, type MiningTerminalState } from "./MiningTerminal";
-import { ValidationBanner } from "./ValidationBanner";
 
 export function BlockchainDemo() {
+  const [view, setView] = useState<AppView>("votar");
   const [blocks, setBlocks] = useState<BlockDto[]>([]);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
-  const [txData, setTxData] = useState(DEFAULT_BLOCK_PAYLOAD);
   const [tamperIndex, setTamperIndex] = useState("1");
   const [tamperData, setTamperData] = useState(DEFAULT_TAMPER_PAYLOAD);
   const [difficulty, setDifficulty] = useState(DIFFICULTY_DEFAULT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [meta, setMeta] = useState<{ difficulty: number; initialized: boolean } | null>(null);
-  const [mineNote, setMineNote] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [miningUi, setMiningUi] = useState<MiningTerminalState | null>(null);
   const [isMining, setIsMining] = useState(false);
+
   const refresh = useCallback(async () => {
     try {
-      const health = await api.health();
+      let health = await api.health();
+      if (!health.initialized) {
+        await api.initChain();
+        health = await api.health();
+      }
       setMeta({ difficulty: health.difficulty, initialized: health.initialized });
       setDifficulty(health.difficulty);
-      if (health.initialized) {
-        const chain = await api.getChain();
-        setBlocks(chain.blocks);
-        setSelectedIndex((prev) => {
-          if (prev === null) return prev;
-          return chain.blocks.some((b) => b.index === prev) ? prev : null;
-        });
-      } else {
-        setBlocks([]);
-        setSelectedIndex(null);
-      }
+      const chain = await api.getChain();
+      setBlocks(chain.blocks);
+      setSelectedIndex((prev) =>
+        prev !== null && chain.blocks.some((b) => b.index === prev) ? prev : null,
+      );
       return true;
     } catch {
       setMeta(null);
@@ -71,212 +65,138 @@ export function BlockchainDemo() {
     }
   }
 
-  const connected = meta !== null;
+  async function handleRegisterVote(payload: string) {
+    setError(null);
+    setValidation(null);
+    setIsMining(true);
+    let targetPrefix = "0".repeat(difficulty);
+    setMiningUi({ status: "mining", difficulty, targetPrefix, attempts: 0, lines: [] });
+
+    const playback = new MiningPlayback(({ attempts, lines }) => {
+      setMiningUi((u) => (u ? { ...u, attempts, lines } : u));
+    });
+
+    try {
+      const result = await addBlockStream(payload, (ev: MineStreamEvent) => {
+        if (ev.type === "start") {
+          targetPrefix = ev.targetPrefix;
+          setMiningUi((u) =>
+            u ? { ...u, difficulty: ev.difficulty, targetPrefix: ev.targetPrefix } : u,
+          );
+        }
+        if (ev.type === "tick") playback.enqueue(miningEventToLine(ev, targetPrefix));
+      });
+
+      const winLine = miningEventToLine(
+        {
+          type: "tick",
+          attempt: result.attempts,
+          nonce: result.block.nonce,
+          hash: result.block.hash,
+        },
+        targetPrefix,
+      );
+      playback.enqueue(winLine);
+      await playback.drain();
+
+      setMiningUi((u) =>
+        u
+          ? {
+              ...u,
+              status: "success",
+              attempts: result.attempts,
+              finalHash: result.block.hash,
+              lines: playback.getLines().slice(-30),
+            }
+          : u,
+      );
+      await refresh();
+    } catch (e) {
+      playback.stop();
+      setError(e instanceof Error ? e.message : "Error al registrar sufragio");
+      setMiningUi((u) =>
+        u ? { ...u, status: "error", errorMessage: e instanceof Error ? e.message : "Error" } : u,
+      );
+      throw e;
+    } finally {
+      playback.stop();
+      setIsMining(false);
+    }
+  }
+
+  const busy = loading || isMining;
+  const initialized = meta?.initialized ?? false;
 
   return (
-    <div className="relative z-10 flex min-h-screen flex-col">
-      <MiningTerminal
-        state={miningUi}
-        onClose={() => {
-          setMiningUi(null);
-          setIsMining(false);
-        }}
-      />
-      <AppHeader
-        connected={connected}
-        difficulty={meta?.difficulty}
-        blockCount={blocks.length}
-      />
+    <div className="shell">
+      <AppHeader view={view} onViewChange={setView} />
+      <StatusStrip connected={meta !== null} blockCount={blocks.length} />
 
-      <div className="mx-auto w-full max-w-[1400px] flex-1 px-5 py-6 sm:px-8 sm:py-8">
-        {error && (
-          <div
-            className="mb-6 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--link)]"
-            role="alert"
-          >
-            <p className="font-medium">Error</p>
-            <p className="mt-0.5 text-[var(--muted)]">{error}</p>
-            {(error.includes("fetch") || error.includes("Failed")) && (
-              <p className="mt-2 font-mono text-xs text-[var(--muted)]">
-                Verifica el backend: docker compose up en demo-blockchain-backend
-              </p>
-            )}
-          </div>
-        )}
+      <MiningTerminal state={miningUi} onClose={() => { setMiningUi(null); setIsMining(false); }} />
 
-        {mineNote && (
-          <p className="mb-4 font-mono text-xs text-[var(--accent)]">{mineNote}</p>
-        )}
+      <main className="main">
+        <div className="wrap">
+          {error && (
+            <div className="notice notice--error mb-6" role="alert">
+              <p className="font-semibold">No se pudo completar la operación</p>
+              <p className="mt-1">{error}</p>
+            </div>
+          )}
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr] lg:gap-10">
-          <aside className="lg:sticky lg:top-6 lg:self-start">
-            <DemoControls
-              txData={txData}
-              tamperIndex={tamperIndex}
-              tamperData={tamperData}
+          {view === "votar" && (
+            <VotarView
+              busy={busy}
+              chainReady={initialized && meta !== null}
+              chainBlocks={blocks}
               difficulty={difficulty}
-              loading={loading || isMining}
-              onTxChange={setTxData}
-              onTamperIndexChange={setTamperIndex}
-              onTamperDataChange={setTamperData}
-              onDifficultyChange={(value) =>
+              onDifficultyChange={(v) =>
                 run(async () => {
-                  const res = await api.setDifficulty(value);
+                  const res = await api.setDifficulty(v);
                   setDifficulty(res.difficulty);
                   setMeta((m) => (m ? { ...m, difficulty: res.difficulty } : m));
                 })
               }
-              onInit={() =>
-                run(async () => {
-                  const res = await api.initChain();
-                  setBlocks(res.blocks);
-                  setValidation(null);
-                  setMineNote(null);
-                  setSelectedIndex(0);
-                  await refresh();
-                })
-              }
-              onAdd={() =>
-                run(async () => {
-                  await api.addBlock(txData);
-                  setValidation(null);
-                  await refresh();
-                })
-              }
-              onMine={async () => {
-                setError(null);
-                setValidation(null);
-                setMineNote(null);
-                setIsMining(true);
-
-                let targetPrefix = "0".repeat(difficulty);
-                setMiningUi({
-                  status: "mining",
-                  difficulty,
-                  targetPrefix,
-                  attempts: 0,
-                  lines: [],
-                });
-
-                const playback = new MiningPlayback(({ attempts, lines }) => {
-                  setMiningUi((u) => (u ? { ...u, attempts, lines } : u));
-                });
-
+              onEscrutinio={() => setView("escrutinio")}
+              onVote={async (payload) => {
+                setLoading(true);
                 try {
-                  const res = await mineBlockStream(txData, (ev) => {
-                    if (ev.type === "start") {
-                      targetPrefix = ev.targetPrefix;
-                      setMiningUi((u) =>
-                        u
-                          ? {
-                              ...u,
-                              difficulty: ev.difficulty,
-                              targetPrefix: ev.targetPrefix,
-                            }
-                          : u,
-                      );
-                    }
-                    if (ev.type === "tick") {
-                      playback.enqueue(miningEventToLine(ev, targetPrefix));
-                    }
-                  });
-
-                  const winLine = miningEventToLine(
-                    {
-                      type: "tick",
-                      attempt: res.attempts,
-                      nonce: res.block.nonce,
-                      hash: res.block.hash,
-                    },
-                    targetPrefix,
-                  );
-                  playback.enqueue(winLine);
-                  await playback.drain();
-
-                  const finalLines = [...playback.getLines()];
-                  if (finalLines[finalLines.length - 1]?.hash !== res.block.hash) {
-                    finalLines.push(winLine);
-                  }
-
-                  setMiningUi((u) =>
-                    u
-                      ? {
-                          ...u,
-                          status: "success",
-                          attempts: res.attempts,
-                          finalHash: res.block.hash,
-                          lines: finalLines.slice(-30),
-                        }
-                      : u,
-                  );
-
-                  setMineNote(
-                    `Minado tras ${res.attempts.toLocaleString("es")} intentos · dificultad ${res.difficulty}`,
-                  );
-                  await refresh();
-                } catch (e) {
-                  playback.stop();
-                  setError(e instanceof Error ? e.message : "Error al minar");
-                  setMiningUi((u) =>
-                    u
-                      ? {
-                          ...u,
-                          status: "error",
-                          errorMessage: e instanceof Error ? e.message : "Error",
-                        }
-                      : u,
-                  );
+                  await handleRegisterVote(payload);
                 } finally {
-                  playback.stop();
-                  setIsMining(false);
+                  setLoading(false);
                 }
               }}
-              onValidate={() =>
-                run(async () => {
-                  const res = await api.validate();
-                  setValidation(res);
-                })
-              }
+            />
+          )}
+          {view === "escrutinio" && (
+            <EscrutinioView
+              blocks={blocks}
+              difficulty={difficulty}
+              tamperIndex={tamperIndex}
+              tamperData={tamperData}
+              busy={busy}
+              initialized={initialized}
+              selectedIndex={selectedIndex}
+              validation={validation}
+              onTamperIndexChange={setTamperIndex}
+              onTamperDataChange={setTamperData}
               onTamper={() =>
                 run(async () => {
-                  const idx = parseInt(tamperIndex, 10);
-                  await api.tamper(idx, tamperData);
+                  await api.tamper(parseInt(tamperIndex, 10), tamperData);
                   setValidation(null);
                   await refresh();
                 })
               }
+              onValidate={() => run(async () => setValidation(await api.validate()))}
+              onSelectBlock={(index) => {
+                setSelectedIndex((prev) => (prev === index ? null : index));
+              }}
+              onCloseDetail={() => setSelectedIndex(null)}
             />
-          </aside>
-
-          <div className="min-w-0 space-y-6">
-            <ValidationBanner result={validation} />
-
-            <BlockRegistry
-              blocks={blocks}
-              selectedIndex={selectedIndex}
-              onSelectBlock={(index) =>
-                setSelectedIndex((prev) => (prev === index ? null : index))
-              }
-            />
-
-            {selectedIndex !== null && blocks.length > 0 && (() => {
-              const block = blocks.find((b) => b.index === selectedIndex);
-              if (!block) return null;
-              const genesis = block.index === 0;
-              return (
-                <div className="border-t border-[var(--border-subtle)] pt-6">
-                  <BlockDetailPanel
-                    block={block}
-                    isGenesis={genesis}
-                    difficulty={difficulty}
-                    onClose={() => setSelectedIndex(null)}
-                  />
-                </div>
-              );
-            })()}
-          </div>
+          )}
         </div>
-      </div>
+      </main>
+
+      <AppFooter />
     </div>
   );
 }
