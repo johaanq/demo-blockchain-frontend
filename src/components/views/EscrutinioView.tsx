@@ -85,12 +85,11 @@ export function EscrutinioView() {
         <div className="audit-grid__tools stack">
           <div className="card">
             <div className="card__head">
-              <h2 className="card__title">Demostración de alteración (solo auditoría)</h2>
+              <h2 className="card__title">Alterar sufragio (fraude con re-minado)</h2>
               <p className="card__desc">
-                Esta herramienta <strong>modifica de verdad</strong> el registro en la cadena — como
-                lo haría un atacante: cambia el contenido del sufragio <em>sin</em> recalcular el
-                hash SHA-256. Después pulse «Validar integridad» para ver cómo el sistema detecta el
-                fraude.
+                Cambia el contenido del registro, <strong>recalcula el hash</strong>, re-mina con PoW y
+                re-sella los bloques posteriores. Es fraude real: la cadena puede seguir pareciendo válida.
+                La detección ocurre al contrastar con el <strong>acta de emisión</strong> guardada al votar.
               </p>
             </div>
             <div className="card__body">
@@ -127,7 +126,7 @@ export function EscrutinioView() {
                   disabled={busy || !initialized}
                   onClick={() => void tamper()}
                 >
-                  Alterar registro en la cadena
+                  Alterar sufragio y re-sellar
                 </button>
                 <button
                   type="button"
@@ -139,8 +138,8 @@ export function EscrutinioView() {
                 </button>
               </div>
               <p className="audit-panel-note">
-                Paso 1: altere un registro · Paso 2: valide · El sistema comparará el hash guardado
-                con el hash recalculado a partir del contenido actual.
+                Paso 1: altere un sufragio (se re-minará) · Paso 2: valide · El sistema comparará la
+                cadena con el acta de emisión inmutable y dirá qué registro fue cambiado.
               </p>
             </div>
           </div>

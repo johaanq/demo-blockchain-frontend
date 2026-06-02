@@ -14,12 +14,19 @@ export interface ChainResponse {
 
 export interface ValidationIssueDetail {
   blockIndex: number;
-  kind: "hash_mismatch" | "broken_link" | "pow_pending" | "pow_invalid";
+  kind:
+    | "hash_mismatch"
+    | "broken_link"
+    | "pow_pending"
+    | "pow_invalid"
+    | "emission_mismatch";
   title: string;
   detail: string;
   storedHash?: string;
   expectedHash?: string;
   dataSnippet?: string;
+  officialDataSnippet?: string;
+  officialHash?: string;
 }
 
 export interface ValidationResult {
@@ -35,7 +42,12 @@ export interface TamperResult {
   index: number;
   previousData: string;
   data: string;
+  previousHash: string;
   hash: string;
+  nonce: number;
+  tamperAttempts: number;
+  rechainedCount: number;
+  tailAttempts: number;
   warning: string;
   explanation: string;
 }
