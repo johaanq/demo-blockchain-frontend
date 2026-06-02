@@ -1,4 +1,4 @@
-import type { BlockDto, ChainResponse, MineResult, ValidationResult } from "./types";
+import type { BlockDto, ChainResponse, MineResult, TamperResult, ValidationResult } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
@@ -59,7 +59,7 @@ export const api = {
   validate: () => request<ValidationResult>("/chain/validate"),
 
   tamper: (index: number, data: string) =>
-    request<{ index: number; data: string; hash: string; warning: string }>("/chain/tamper", {
+    request<TamperResult>("/chain/tamper", {
       method: "POST",
       body: JSON.stringify({ index, data }),
     }),

@@ -1,5 +1,5 @@
-import { BlockchainDemo } from "@/components/BlockchainDemo";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <BlockchainDemo />;
+  redirect("/voto");
 }

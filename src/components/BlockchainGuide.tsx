@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { BLOCKCHAIN_GUIDE } from "@/lib/blockchain-guide";
 import { ELECTION } from "@/lib/demo-defaults";
 
-export function BlockchainGuide({ onEscrutinio }: { onEscrutinio?: () => void }) {
+export function BlockchainGuide() {
   return (
     <aside className="guide-panel">
       <div className="guide-panel__head">
@@ -27,11 +28,9 @@ export function BlockchainGuide({ onEscrutinio }: { onEscrutinio?: () => void })
           </p>
         ))}
       </div>
-      {onEscrutinio && (
-        <button type="button" className="btn btn--secondary btn-block mt-4" onClick={onEscrutinio}>
-          Ver trazabilidad del sufragio →
-        </button>
-      )}
+      <Link href="/consulta" className="btn btn--secondary btn-block mt-4">
+        Ver trazabilidad del sufragio →
+      </Link>
       <p className="guide-disclaimer">{ELECTION.disclaimer}</p>
     </aside>
   );

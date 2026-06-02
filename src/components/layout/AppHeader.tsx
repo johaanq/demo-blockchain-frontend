@@ -1,16 +1,14 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { OnpeLogo } from "@/components/brand/OnpeLogo";
-import { APP_VIEWS, type AppView } from "@/lib/navigation";
+import { APP_ROUTES } from "@/lib/navigation";
 import { ELECTION } from "@/lib/demo-defaults";
 
-export function AppHeader({
-  view,
-  onViewChange,
-}: {
-  view: AppView;
-  onViewChange: (v: AppView) => void;
-}) {
+export function AppHeader() {
+  const pathname = usePathname();
+
   return (
     <header className="gov-header">
       <div className="gov-header__peru">
@@ -30,23 +28,23 @@ export function AppHeader({
         </div>
       </div>
       <div className="wrap gov-header__main">
-        <button type="button" className="gov-brand" onClick={() => onViewChange("votar")}>
+        <Link href="/voto" className="gov-brand">
           <OnpeLogo height={48} />
           <span className="gov-brand__text">
             <span className="gov-brand__title">{ELECTION.platformName}</span>
             <span className="gov-brand__sub">{ELECTION.platformTagline}</span>
           </span>
-        </button>
+        </Link>
         <nav className="gov-nav" aria-label="Secciones">
-          {APP_VIEWS.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              className={`gov-nav__link ${view === v.id ? "gov-nav__link--on" : ""}`}
-              onClick={() => onViewChange(v.id)}
+          {APP_ROUTES.map((route) => (
+            <Link
+              key={route.id}
+              href={route.path}
+              className={`gov-nav__link ${pathname === route.path ? "gov-nav__link--on" : ""}`}
+              aria-current={pathname === route.path ? "page" : undefined}
             >
-              {v.label}
-            </button>
+              {route.label}
+            </Link>
           ))}
         </nav>
       </div>

@@ -10,9 +10,8 @@ import { VoteReviewPanel } from "@/components/voting/VoteReviewPanel";
 import { VoteWizardProgress } from "@/components/voting/VoteWizardProgress";
 import { VoterPadronCard } from "@/components/voting/VoterPadronCard";
 import { VoterVerificationForm } from "@/components/voting/VoterVerificationForm";
-import { buildVotePayload, ELECTION, type VoteOption } from "@/lib/demo-defaults";
-import type { VoteWizardStep } from "@/lib/navigation";
-import type { BlockDto } from "@/lib/types";
+import { useElection } from "@/context/ElectionProvider";
+import { buildVotePayload, ELECTION } from "@/lib/demo-defaults";
 import {
   buildReceiptCode,
   findExistingVote,
@@ -21,36 +20,27 @@ import {
   type VoterRecord,
 } from "@/lib/voter-registry";
 
-export function VotarView({
-  busy,
-  chainReady,
-  chainBlocks,
-  difficulty,
-  onDifficultyChange,
-  onVote,
-  onEscrutinio,
-}: {
-  busy: boolean;
-  chainReady: boolean;
-  chainBlocks: BlockDto[];
-  difficulty: number;
-  onDifficultyChange: (value: number) => void;
-  onVote: (payload: string) => void | Promise<void>;
-  onEscrutinio: () => void;
-}) {
-  const [step, setStep] = useState<VoteWizardStep>("identidad");
-  const [dni, setDni] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [verifyError, setVerifyError] = useState<string | null>(null);
+export function VotarView() {
+  const {
+    blocks: chainBlocks,
+    busy,
+    chainReady,
+    difficulty,
+    setDifficulty,
+    voteSession,
+    setVoteStep,
+    setDni,
+    setBirthDate,
+    setVerifyError,
+    setVoter,
+    setSelected,
+    setReceipt,
+    resetVoteSession,
+    registerVote,
+  } = useElection();
+
+  const { step, dni, birthDate, verifyError, voter, selected, receipt } = voteSession;
   const [verifying, setVerifying] = useState(false);
-  const [voter, setVoter] = useState<VoterRecord | null>(null);
-  const [selected, setSelected] = useState<VoteOption | null>(null);
-  const [receipt, setReceipt] = useState<{
-    code: string;
-    at: Date;
-    option: VoteOption;
-    alreadyRegistered?: boolean;
-  } | null>(null);
 
   function showExistingVote(v: VoterRecord) {
     const existing = findExistingVote(v.dni, chainBlocks);
@@ -63,7 +53,7 @@ export function VotarView({
       option: existing.option,
       alreadyRegistered: true,
     });
-    setStep("comprobante");
+    setVoteStep("comprobante");
     return true;
   }
 
@@ -79,7 +69,7 @@ export function VotarView({
       if (showExistingVote(result.voter)) return;
 
       setVoter(result.voter);
-      setStep("padron");
+      setVoteStep("padron");
     } finally {
       setVerifying(false);
     }
@@ -88,24 +78,20 @@ export function VotarView({
   async function handleCastVote() {
     if (!voter || !selected || !chainReady) return;
     const code = buildReceiptCode(voter.dni, selected);
-    const payload = buildVotePayload(voter.mesa, maskDni(voter.dni), selected, code);
+    const payload = buildVotePayload(
+      voter.mesa,
+      maskDni(voter.dni),
+      selected,
+      code,
+      voter.fullName,
+    );
     try {
-      await onVote(payload);
+      await registerVote(payload);
       setReceipt({ code, at: new Date(), option: selected });
-      setStep("comprobante");
+      setVoteStep("comprobante");
     } catch {
-      /* error mostrado en BlockchainDemo */
+      /* error mostrado en ElectionProvider */
     }
-  }
-
-  function resetSession() {
-    setStep("identidad");
-    setDni("");
-    setBirthDate("");
-    setVerifyError(null);
-    setVoter(null);
-    setSelected(null);
-    setReceipt(null);
   }
 
   const working = busy || verifying;
@@ -117,8 +103,12 @@ export function VotarView({
           <OnpeLogo height={56} />
         </div>
         <div className="onpe-hero__text">
-          <p className="gov-kicker">{ELECTION.name} · {ELECTION.round}</p>
-          <h1 className="gov-page-title">{ELECTION.platformName} — {ELECTION.platformOrg}</h1>
+          <p className="gov-kicker">
+            {ELECTION.name} · {ELECTION.round}
+          </p>
+          <h1 className="gov-page-title">
+            {ELECTION.platformName} — {ELECTION.platformOrg}
+          </h1>
           <p className="gov-lead">
             La ONPE es el organismo que organiza y ejecuta las elecciones en el Perú. Jornada del{" "}
             {ELECTION.runoffDate}. Identifíquese con su DNI para emitir su sufragio presidencial en
@@ -130,9 +120,7 @@ export function VotarView({
       <VoteWizardProgress current={step} />
 
       {!chainReady && (
-        <div className="notice notice--warn">
-          Conectando con el registro de sufragios…
-        </div>
+        <div className="notice notice--warn">Conectando con el registro de sufragios…</div>
       )}
 
       <div className="page-columns page-columns--vote">
@@ -150,7 +138,7 @@ export function VotarView({
           )}
 
           {step === "padron" && voter && (
-            <VoterPadronCard voter={voter} onContinue={() => setStep("sufragio")} />
+            <VoterPadronCard voter={voter} onContinue={() => setVoteStep("sufragio")} />
           )}
 
           {step === "sufragio" && voter && (
@@ -167,7 +155,7 @@ export function VotarView({
                   <button
                     type="button"
                     className="btn btn--ghost"
-                    onClick={() => setStep("padron")}
+                    onClick={() => setVoteStep("padron")}
                   >
                     Volver
                   </button>
@@ -175,7 +163,7 @@ export function VotarView({
                     type="button"
                     className="btn btn--primary"
                     disabled={!selected}
-                    onClick={() => setStep("revision")}
+                    onClick={() => setVoteStep("revision")}
                   >
                     Revisar sufragio
                   </button>
@@ -189,7 +177,7 @@ export function VotarView({
               option={selected}
               voterName={voter.fullName}
               mesa={voter.mesa}
-              onBack={() => setStep("sufragio")}
+              onBack={() => setVoteStep("sufragio")}
               onConfirm={handleCastVote}
               busy={working}
               disabled={!chainReady}
@@ -201,10 +189,10 @@ export function VotarView({
               receiptCode={receipt.code}
               option={receipt.option}
               mesa={voter.mesa}
+              voterName={voter.fullName}
               timestamp={receipt.at}
               alreadyRegistered={receipt.alreadyRegistered}
-              onEscrutinio={onEscrutinio}
-              onNewVote={resetSession}
+              onNewVote={resetVoteSession}
             />
           )}
         </div>
@@ -213,9 +201,9 @@ export function VotarView({
           <VotePowSettings
             difficulty={difficulty}
             disabled={busy}
-            onDifficultyChange={onDifficultyChange}
+            onDifficultyChange={(v) => void setDifficulty(v)}
           />
-          <BlockchainGuide onEscrutinio={onEscrutinio} />
+          <BlockchainGuide />
         </aside>
       </div>
     </div>

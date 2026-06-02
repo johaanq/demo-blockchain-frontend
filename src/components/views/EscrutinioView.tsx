@@ -1,61 +1,34 @@
 "use client";
 
 import { OnpeLogo } from "@/components/brand/OnpeLogo";
+import { TamperResultNotice, ValidationResultPanel } from "@/components/audit/ValidationResultPanel";
 import { BlockDetailPanel } from "@/components/BlockDetailPanel";
 import { BlockRegistry } from "@/components/BlockRegistry";
-import type { BlockDto, ValidationResult } from "@/lib/types";
+import { useElection } from "@/context/ElectionProvider";
 
-function Btn({
-  children,
-  variant = "secondary",
-  className = "",
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "danger" | "ghost";
-}) {
-  return (
-    <button type="button" className={`btn btn--${variant} ${className}`} {...props}>
-      {children}
-    </button>
-  );
-}
+export function EscrutinioView() {
+  const {
+    blocks,
+    difficulty,
+    tamperIndex,
+    tamperData,
+    busy,
+    initialized,
+    selectedIndex,
+    validation,
+    lastTamper,
+    setTamperIndex,
+    setTamperData,
+    tamper,
+    validate,
+    setSelectedIndex,
+  } = useElection();
 
-export function EscrutinioView({
-  blocks,
-  difficulty,
-  tamperIndex,
-  tamperData,
-  busy,
-  initialized,
-  selectedIndex,
-  validation,
-  onTamperIndexChange,
-  onTamperDataChange,
-  onTamper,
-  onValidate,
-  onSelectBlock,
-  onCloseDetail,
-}: {
-  blocks: BlockDto[];
-  difficulty: number;
-  tamperIndex: string;
-  tamperData: string;
-  busy: boolean;
-  initialized: boolean;
-  selectedIndex: number | null;
-  validation: ValidationResult | null;
-  onTamperIndexChange: (v: string) => void;
-  onTamperDataChange: (v: string) => void;
-  onTamper: () => void;
-  onValidate: () => void;
-  onSelectBlock: (index: number) => void;
-  onCloseDetail: () => void;
-}) {
   const selected = blocks.find((b) => b.index === selectedIndex);
 
   return (
     <div className="page escrutinio-page">
-      <header className="onpe-hero">
+      <header className="onpe-hero" id="contenido">
         <div className="onpe-hero__logos">
           <OnpeLogo height={56} />
         </div>
@@ -80,21 +53,9 @@ export function EscrutinioView({
         </li>
       </ol>
 
-      {validation && (
-        <div className={`notice ${validation.valid ? "notice--ok" : "notice--error"}`}>
-          <p className="font-semibold">
-            {validation.valid ? "Registros íntegros" : "Alteración detectada"}
-          </p>
-          <p className="mt-1">{validation.message}</p>
-          {validation.issues.length > 0 && (
-            <ul className="validation-issues">
-              {validation.issues.map((i) => (
-                <li key={i}>{i}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      {lastTamper && !validation && <TamperResultNotice result={lastTamper} />}
+
+      {validation && <ValidationResultPanel validation={validation} blocks={blocks} />}
 
       <section className="chain-panel" aria-labelledby="chain-title">
         <div className="chain-panel__head">
@@ -113,7 +74,9 @@ export function EscrutinioView({
           <BlockRegistry
             blocks={blocks}
             selectedIndex={selectedIndex}
-            onSelectBlock={onSelectBlock}
+            onSelectBlock={(index) => {
+              setSelectedIndex(selectedIndex === index ? null : index);
+            }}
           />
         </div>
       </section>
@@ -122,14 +85,19 @@ export function EscrutinioView({
         <div className="audit-grid__tools stack">
           <div className="card">
             <div className="card__head">
-              <h2 className="card__title">Prueba de alteración</h2>
-              <p className="card__desc">Simule un fraude y valide que la cadena lo detecta.</p>
+              <h2 className="card__title">Demostración de alteración (solo auditoría)</h2>
+              <p className="card__desc">
+                Esta herramienta <strong>modifica de verdad</strong> el registro en la cadena — como
+                lo haría un atacante: cambia el contenido del sufragio <em>sin</em> recalcular el
+                hash SHA-256. Después pulse «Validar integridad» para ver cómo el sistema detecta el
+                fraude.
+              </p>
             </div>
             <div className="card__body">
               <div className="form-row">
                 <div className="form-row__field form-row__field--narrow">
                   <label className="label" htmlFor="tamper-i">
-                    Registro #
+                    Registro # a alterar
                   </label>
                   <input
                     id="tamper-i"
@@ -137,29 +105,43 @@ export function EscrutinioView({
                     min={0}
                     className="input"
                     value={tamperIndex}
-                    onChange={(e) => onTamperIndexChange(e.target.value)}
+                    onChange={(e) => setTamperIndex(e.target.value)}
                   />
                 </div>
                 <div className="form-row__field">
                   <label className="label" htmlFor="tamper-d">
-                    Nuevo contenido
+                    Nuevo contenido fraudulento
                   </label>
                   <input
                     id="tamper-d"
                     className="input font-data text-xs"
                     value={tamperData}
-                    onChange={(e) => onTamperDataChange(e.target.value)}
+                    onChange={(e) => setTamperData(e.target.value)}
                   />
                 </div>
               </div>
               <div className="btn-row">
-                <Btn variant="danger" disabled={busy || !initialized} onClick={onTamper}>
-                  Simular alteración
-                </Btn>
-                <Btn disabled={busy || !initialized} onClick={onValidate}>
+                <button
+                  type="button"
+                  className="btn btn--danger"
+                  disabled={busy || !initialized}
+                  onClick={() => void tamper()}
+                >
+                  Alterar registro en la cadena
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  disabled={busy || !initialized}
+                  onClick={() => void validate()}
+                >
                   Validar integridad
-                </Btn>
+                </button>
               </div>
+              <p className="audit-panel-note">
+                Paso 1: altere un registro · Paso 2: valide · El sistema comparará el hash guardado
+                con el hash recalculado a partir del contenido actual.
+              </p>
             </div>
           </div>
         </div>
@@ -170,7 +152,7 @@ export function EscrutinioView({
               block={selected}
               isGenesis={selected.index === 0}
               difficulty={difficulty}
-              onClose={onCloseDetail}
+              onClose={() => setSelectedIndex(null)}
             />
           ) : (
             <div className="empty-panel">

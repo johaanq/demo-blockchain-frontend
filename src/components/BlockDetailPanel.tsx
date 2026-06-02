@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { parseVoteOption, CANDIDATES } from "@/lib/demo-defaults";
+import { CANDIDATES, parseVoteRecord } from "@/lib/demo-defaults";
 import type { BlockDto } from "@/lib/types";
 
 export function BlockDetailPanel({
@@ -16,7 +16,7 @@ export function BlockDetailPanel({
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
-  const vote = parseVoteOption(block.data);
+  const voteRecord = parseVoteRecord(block.data);
 
   const copy = useCallback(async (text: string, key: string) => {
     try {
@@ -44,9 +44,9 @@ export function BlockDetailPanel({
           <h3 className="card__title block-detail__title">
             {isGenesis ? "Acta de apertura" : `Detalle del registro ${block.index}`}
           </h3>
-          {vote && (
+          {voteRecord && (
             <p className="card__desc">
-              Voto · {CANDIDATES[vote].name} ({CANDIDATES[vote].party})
+              Voto · {CANDIDATES[voteRecord.option].name} ({CANDIDATES[voteRecord.option].party})
             </p>
           )}
         </div>
@@ -55,6 +55,37 @@ export function BlockDetailPanel({
         </button>
       </div>
       <div className="card__body block-detail__body">
+        {voteRecord && (
+          <div className="block-detail__vote">
+            <p className="block-detail__vote-label">Electora / Elector</p>
+            <dl className="review-grid block-detail__vote-grid">
+              <div className="review-grid__full">
+                <dt>Nombres y apellidos</dt>
+                <dd>{voteRecord.electorName ?? "No registrado en este bloque"}</dd>
+              </div>
+              <div>
+                <dt>DNI (enmascarado)</dt>
+                <dd className="font-data">{voteRecord.dniMasked}</dd>
+              </div>
+              <div>
+                <dt>Mesa de sufragio</dt>
+                <dd className="font-data">{voteRecord.mesa}</dd>
+              </div>
+              <div>
+                <dt>Preferencia</dt>
+                <dd>
+                  {CANDIDATES[voteRecord.option].party} — {CANDIDATES[voteRecord.option].name}
+                </dd>
+              </div>
+              {voteRecord.receiptCode && (
+                <div className="review-grid__full">
+                  <dt>Comprobante</dt>
+                  <dd className="font-data">{voteRecord.receiptCode}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
         <Row label="Contenido" value={block.data} data />
         <Row
           label="Marca de tiempo"
@@ -67,7 +98,9 @@ export function BlockDetailPanel({
         <Row label="Hash anterior" value={block.previousHash} data copy={copy} copied={copied} />
         <Row label="Hash SHA-256" value={block.hash} data copy={copy} copied={copied} />
         {pow && (
-          <p className={`block-detail__pow ${pow.startsWith("Cumple") ? "notice notice--ok" : "notice notice--error"}`}>
+          <p
+            className={`block-detail__pow ${pow.startsWith("Cumple") ? "notice notice--ok" : "notice notice--error"}`}
+          >
             {pow}
           </p>
         )}

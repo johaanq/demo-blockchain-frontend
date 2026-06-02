@@ -1,4 +1,4 @@
-import { CANDIDATES, parseVoteOption } from "@/lib/demo-defaults";
+import { CANDIDATES, parseVoteOption, parseVoteRecord } from "@/lib/demo-defaults";
 import type { BlockDto } from "@/lib/types";
 
 export function BlockCard({
@@ -13,6 +13,7 @@ export function BlockCard({
   onSelect?: () => void;
 }) {
   const vote = parseVoteOption(block.data);
+  const voteRecord = parseVoteRecord(block.data);
   const barColor = isGenesis
     ? "var(--brand)"
     : vote
@@ -28,7 +29,7 @@ export function BlockCard({
     >
       <div className="block__bar" style={{ background: barColor }} />
       <div className="block__inner">
-        <p className="font-semibold text-[var(--ink)]">
+        <p className="block__title">
           {isGenesis ? "Apertura de jornada" : `Registro ${block.index}`}
         </p>
         <p className="block__meta">
@@ -38,8 +39,11 @@ export function BlockCard({
           })}
           {vote && ` · ${CANDIDATES[vote].party}`}
         </p>
+        {voteRecord?.electorName && (
+          <p className="block__elector">{voteRecord.electorName}</p>
+        )}
         <p className="block__payload">{block.data}</p>
-        <p className="font-data mt-2 text-[var(--muted)]">
+        <p className="block__nonce font-data">
           nonce {block.nonce.toLocaleString("es")}
         </p>
       </div>

@@ -54,8 +54,11 @@ export function buildVotePayload(
   dniMasked: string,
   option: VoteOption,
   receipt?: string,
+  electorName?: string,
 ): string {
-  const base = `VOTO | mesa=${mesa} | DNI=${dniMasked} | opcion=${option} | EG2026-2V`;
+  const safeName = electorName?.replace(/\|/g, " ").trim();
+  const electorPart = safeName ? ` | elector=${safeName}` : "";
+  const base = `VOTO | mesa=${mesa} | DNI=${dniMasked}${electorPart} | opcion=${option} | EG2026-2V`;
   return receipt ? `${base} | comprobante=${receipt}` : base;
 }
 
@@ -80,6 +83,27 @@ export function parseVoteOption(data: string): VoteOption | null {
   const m = data.match(/opcion=(KEIKO|SANCHEZ)/i);
   if (!m) return null;
   return m[1].toUpperCase() as VoteOption;
+}
+
+export type ParsedVoteRecord = {
+  option: VoteOption;
+  mesa: string;
+  dniMasked: string;
+  electorName: string | null;
+  receiptCode: string | null;
+};
+
+export function parseVoteRecord(data: string): ParsedVoteRecord | null {
+  if (!data.startsWith("VOTO")) return null;
+  const option = parseVoteOption(data);
+  if (!option) return null;
+  return {
+    option,
+    mesa: data.match(/mesa=(\d+)/)?.[1] ?? "—",
+    dniMasked: data.match(/DNI=([^|]+)/)?.[1]?.trim() ?? "—",
+    electorName: data.match(/elector=([^|]+)/)?.[1]?.trim() ?? null,
+    receiptCode: data.match(/comprobante=(ONPE-[A-F0-9]+)/i)?.[1] ?? null,
+  };
 }
 
 export function getCandidateStyle(data: string) {

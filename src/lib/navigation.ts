@@ -1,9 +1,9 @@
-export const APP_VIEWS = [
-  { id: "votar", label: "Votar en línea" },
-  { id: "escrutinio", label: "Consulta y auditoría" },
+export const APP_ROUTES = [
+  { id: "voto", path: "/voto", label: "Votar en línea" },
+  { id: "consulta", path: "/consulta", label: "Consulta y auditoría" },
 ] as const;
 
-export type AppView = (typeof APP_VIEWS)[number]["id"];
+export type AppRouteId = (typeof APP_ROUTES)[number]["id"];
 
 export const VOTE_WIZARD_STEPS = [
   { id: "identidad", label: "Identificación" },
@@ -14,3 +14,8 @@ export const VOTE_WIZARD_STEPS = [
 ] as const;
 
 export type VoteWizardStep = (typeof VOTE_WIZARD_STEPS)[number]["id"];
+
+export function routeFromPath(pathname: string): AppRouteId | null {
+  const match = APP_ROUTES.find((r) => r.path === pathname);
+  return match?.id ?? null;
+}

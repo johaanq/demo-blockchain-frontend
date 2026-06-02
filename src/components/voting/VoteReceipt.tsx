@@ -1,20 +1,21 @@
+import Link from "next/link";
 import { CANDIDATES, ELECTION, type VoteOption } from "@/lib/demo-defaults";
 
 export function VoteReceipt({
   receiptCode,
   option,
   mesa,
+  voterName,
   timestamp,
   alreadyRegistered = false,
-  onEscrutinio,
   onNewVote,
 }: {
   receiptCode: string;
   option: VoteOption;
   mesa: string;
+  voterName: string;
   timestamp: Date;
   alreadyRegistered?: boolean;
-  onEscrutinio: () => void;
   onNewVote: () => void;
 }) {
   const c = CANDIDATES[option];
@@ -33,9 +34,15 @@ export function VoteReceipt({
       </div>
       <div className="onpe-panel__body">
         <div className="receipt-card">
-          <p className="receipt-card__org">{ELECTION.platformOrg} · {ELECTION.name}</p>
+          <p className="receipt-card__org">
+            {ELECTION.platformOrg} · {ELECTION.name}
+          </p>
           <p className="receipt-card__code font-data">{receiptCode}</p>
           <dl className="receipt-grid">
+            <div className="receipt-grid__full">
+              <dt>Electora / Elector</dt>
+              <dd>{voterName}</dd>
+            </div>
             <div>
               <dt>Fecha y hora</dt>
               <dd>
@@ -66,9 +73,9 @@ export function VoteReceipt({
           </dl>
         </div>
         <div className="btn-row mt-5">
-          <button type="button" className="btn btn--secondary" onClick={onEscrutinio}>
+          <Link href="/consulta" className="btn btn--secondary">
             Consultar trazabilidad
-          </button>
+          </Link>
           <button type="button" className="btn btn--ghost" onClick={onNewVote}>
             {alreadyRegistered ? "Salir" : "Cerrar sesión de voto"}
           </button>
