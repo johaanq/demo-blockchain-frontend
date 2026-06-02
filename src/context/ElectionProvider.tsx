@@ -171,18 +171,19 @@ export function ElectionProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      let health = await api.health();
-      if (!health.initialized) {
-        await api.initChain();
-        health = await api.health();
-      }
+      const health = await api.health();
       setMeta({ difficulty: health.difficulty, initialized: health.initialized });
       setDifficultyState(health.difficulty);
-      const chain = await api.getChain();
-      setBlocks(chain.blocks);
-      setSelectedIndex((prev) =>
-        prev !== null && chain.blocks.some((b) => b.index === prev) ? prev : null,
-      );
+      if (health.initialized) {
+        const chain = await api.getChain();
+        setBlocks(chain.blocks);
+        setSelectedIndex((prev) =>
+          prev !== null && chain.blocks.some((b) => b.index === prev) ? prev : null,
+        );
+      } else {
+        setBlocks([]);
+        setSelectedIndex(null);
+      }
       return true;
     } catch {
       setMeta(null);
@@ -228,6 +229,11 @@ export function ElectionProvider({ children }: { children: ReactNode }) {
       });
 
       try {
+        const health = await api.health();
+        if (!health.initialized) {
+          await api.initChain();
+        }
+
         const result = await addBlockStream(payload, (ev: MineStreamEvent) => {
           if (ev.type === "start") {
             targetPrefix = ev.targetPrefix;

@@ -32,11 +32,6 @@ export const api = {
   initChain: () =>
     request<{ message: string; blocks: BlockDto[] }>("/chain/init", { method: "POST" }),
 
-  seedDemo: () =>
-    request<{ message: string; blocksAdded: number; blocks: BlockDto[] }>("/chain/seed", {
-      method: "POST",
-    }),
-
   getChain: () => request<ChainResponse>("/chain"),
 
   addBlock: (data: string) =>
